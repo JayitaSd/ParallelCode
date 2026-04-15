@@ -98,14 +98,14 @@ src/main/java/com/example/backend
 
 * Java 17+
 * Maven
-* MySQL
+* PostGreSql
 
 ### Steps
 
 ```bash
 # Clone the repo
 git clone https://github.com/JayitaSd/ParallelCode/Backend.git
-cd backend
+cd Backend
 
 # Configure database in application.properties
 
