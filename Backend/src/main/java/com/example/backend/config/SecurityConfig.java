@@ -1,5 +1,6 @@
-package com.example.backend.security;
+package com.example.backend.config;
 
+import com.example.backend.security.JwtFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;

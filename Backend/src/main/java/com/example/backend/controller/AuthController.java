@@ -1,9 +1,9 @@
 package com.example.backend.controller;
 
-import com.example.backend.dto.AuthResponse;
-import com.example.backend.dto.LoginRequest;
-import com.example.backend.dto.SignUpRequest;
-import com.example.backend.services.AuthService;
+import com.example.backend.dto.auth.AuthResponse;
+import com.example.backend.dto.auth.LoginRequest;
+import com.example.backend.dto.auth.SignUpRequest;
+import com.example.backend.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
