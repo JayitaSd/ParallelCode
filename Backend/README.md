@@ -63,32 +63,38 @@ src/main/java/com/example/backend
 
 ### Auth APIs
 
-| Method | Endpoint         | Description         |
-| ------ | ---------------- | ------------------- |
-| POST   | /api/auth/signup | Register a new user |
-| POST   | /api/auth/login  | Authenticate user   |
+| Method | Endpoint    | Description         |
+| ------ | ----------- | ------------------- |
+| POST   | /auth/signup | Register a new user |
+| POST   | /auth/login | Authenticate user   |
 
-### Room APIs
+### Document APIs
 
-| Method | Endpoint         | Description                     |
-| ------ | ---------------- | ------------------------------- |
-| POST   | /api/room/create | Create a new collaboration room |
-| GET    | /api/room/{id}   | Get room details                |
+| Method | Endpoint                 | Description                          |
+| ------ | ------------------------ | ------------------------------------ |
+| POST   | /documents/create        | Create a new document                |
+| GET    | /documents/id/{id}       | Get document details by id           |
+| POST   | /documents/{id}/members  | Add a member to a document (query param: `username`) |
+| GET    | /test                    | Test protected route                 |
 
 ---
 
 ## 🔄 WebSocket Endpoints
 
-* **/ws** → WebSocket connection endpoint
-* **/topic/code/{roomId}** → Broadcast code updates
-* **/app/code** → Send code changes
+* **/ws** → STOMP WebSocket handshake endpoint (requires `Authorization: Bearer <token>` header)
+* **/app/edit** → Send document edits to server
+* **/app/join** → Join a document session and request current content
+* **/topic/doc/{docId}** → Broadcast latest document content to all subscribers
+* **/user/queue/doc/{docId}** → Send current document state only to the joining user
 
 ### Flow
 
-1. Client connects to `/ws`
-2. Subscribes to `/topic/code/{roomId}`
-3. Sends updates to `/app/code`
-4. Server broadcasts updates to all connected clients
+1. Client connects to `/ws` with JWT in `Authorization` header.
+2. Client subscribes to `/topic/doc/{docId}` for live updates.
+3. Client sends join event to `/app/join` to fetch current content.
+4. Server replies to that user on `/user/queue/doc/{docId}`.
+5. Client sends edits to `/app/edit`.
+6. Server broadcasts updates to `/topic/doc/{docId}`.
 
 ---
 
@@ -135,27 +141,6 @@ Use tools like **Postman** or **cURL**:
 
 * Test authentication endpoints
 * Use WebSocket clients (e.g., browser or tools like Hoppscotch) for real-time features
-
----
-
-## 📌 Future Enhancements
-
-* 🌐 Multi-language execution support
-* 📊 Version history & diff tracking
-* 🤖 AI code suggestions
-* 🧑‍💼 Role-based permissions (owner/editor/viewer)
-
----
-
-## 🤝 Contributing
-
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
 
 ---
 
