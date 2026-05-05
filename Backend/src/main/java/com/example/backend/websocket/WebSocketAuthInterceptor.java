@@ -19,22 +19,31 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
     }
 
     @Override
-    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) {
+    public boolean beforeHandshake(ServerHttpRequest request,
+                                   ServerHttpResponse response,
+                                   WebSocketHandler wsHandler,
+                                   Map<String, Object> attributes) {
+
         if (request instanceof ServletServerHttpRequest servletRequest) {
 
-            String authHeader = servletRequest.getServletRequest().getHeader("Authorization");
+            String query = servletRequest.getURI().getQuery();
 
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) return false;
+            if (query != null && query.startsWith("token=")) {
+                String token = query.substring(6);
 
-            String token = authHeader.substring(7);
-            try {
-                String username = jwtUtil.extractUsername(token);
-                attributes.put("username", username);
-                return true;
-            } catch (Exception e) {
-                return false;
+                try {
+                    String username = jwtUtil.extractUsername(token);
+                    attributes.put("username", username);
+                    System.out.println("✅ Handshake success for user: " + username);
+                    return true;
+                } catch (Exception e) {
+                    System.out.println("❌ Invalid token");
+                    return false;
+                }
             }
         }
+
+        System.out.println("❌ No token in query");
         return false;
     }
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception exception) {}

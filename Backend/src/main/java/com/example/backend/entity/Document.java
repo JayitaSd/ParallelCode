@@ -17,7 +17,7 @@ public class Document {
     private Long id;
     @Column(nullable = false)
     private String title;
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String content;
     @ManyToOne
     @JoinColumn(name = "owner_id", nullable = false)

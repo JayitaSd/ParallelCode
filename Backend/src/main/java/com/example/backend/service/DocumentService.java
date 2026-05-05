@@ -77,4 +77,11 @@ public class DocumentService {
         document.getMembers().add(member);
         docRepo.save(document);
     }
+
+    public void updateDocumentContent(Long docId, String content) {
+        Document document = docRepo.findById(docId)
+                .orElseThrow(() -> new RuntimeException("Document not found"));
+        document.setContent(content);
+        docRepo.save(document);
+    }
 }

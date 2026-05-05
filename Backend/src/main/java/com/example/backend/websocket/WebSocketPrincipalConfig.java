@@ -6,8 +6,12 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 public class WebSocketPrincipalConfig implements WebSocketMessageBrokerConfigurer {
+    private final UserChannelInterceptor userChannelInterceptor;
+    public WebSocketPrincipalConfig(UserChannelInterceptor userChannelInterceptor) {
+        this.userChannelInterceptor = userChannelInterceptor;
+    }
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(new UserChannelInterceptor());
+        registration.interceptors(userChannelInterceptor);
     }
 }
