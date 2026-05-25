@@ -41,7 +41,7 @@ public class JwtUtil {
         return getClaims(token).getExpiration().before(new Date());
     }
     private Claims getClaims(String token) {
-        return Jwts.parserBuilder()
+        return Jwts.parser()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)

@@ -25,7 +25,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                 .addInterceptors(webSocketAuthInterceptor)
-                .setAllowedOriginPatterns("*");
+                .setAllowedOriginPatterns(
+                        "http://localhost:*",
+                        "http://localhost:5173",    // React Vite dev server
+                        "http://localhost:3000",
+                        "http://localhost:8080",
+                        "http://127.0.0.1:*",
+                        "http://127.0.0.1:5173",    // React Vite dev server (127.0.0.1)
+                        "http://127.0.0.1:3000"
+                );
                 //.withSockJS();
     }
 }

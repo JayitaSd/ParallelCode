@@ -2,31 +2,36 @@
 
 ## 📌 Overview
 
-This is the backend service for a **Real-Time Collaborative Code Editor** built using **Spring Boot**. It handles authentication, session management, real-time collaboration, and code synchronization between multiple users.
+This is the backend service for a **Real-Time Collaborative Code Editor** built using **Spring Boot**. It handles authentication, session management, real-time collaboration, code synchronization, and uses a **Redis + PostgreSQL** architecture for optimal performance and scalability.
 
 ---
 
 ## ⚙️ Tech Stack
 
 * **Java 17**
-* **Spring Boot**
+* **Spring Boot 4.0.5**
 * **Spring Security + JWT** (Authentication & Authorization)
 * **WebSocket (STOMP protocol)** for real-time communication
-* **Spring Data JPA**
-* **PostGreSql**
-* **Lombok**
+* **Spring Data JPA** (Database ORM)
+* **PostgreSQL** (Persistent Database)
+* **Redis 7** (In-Memory Cache & Pub/Sub)
 * **Maven**
+* **Docker & Docker Compose** (Containerization)
 
 ---
 
 ## 🚀 Features
 
 * 🔐 User Authentication (Signup/Login with JWT)
-* 🧑‍🤝‍🧑 Multi-user collaboration in real-time
+* 🧑‍🤝‍🧑 Multi-user real-time collaboration
 * 📝 Live code synchronization via WebSockets
-* 📂 Room/Session-based editing
-* 💾 Persistent storage of users and sessions
-* 🔄 Auto-reconnect and state sync
+* ⚡ Ultra-fast caching with Redis (sub-millisecond access)
+* 💾 Automatic persistence to PostgreSQL
+* 🔄 Distributed Pub/Sub for multi-instance scaling
+* 👥 User session tracking per document
+* 📡 Real-time broadcast to all active editors
+* 🛡️ Automatic fallback to database if cache fails
+* 📊 Document state synchronization across instances
 
 ---
 
@@ -34,18 +39,57 @@ This is the backend service for a **Real-Time Collaborative Code Editor** built 
 
 ```
 src/main/java/com/example/backend
-
 │
-├── cache        
-├── config            # App Configurations 
-├── controller        # REST Controllers
-├── dto               # Request/Response DTOs
-├── entity            # Database Entities
-├── repo              # JPA Repositories
-├── security          # JWT + Security Config
-├── services          # Business Logic
-├── util          
-└── websocket         # WebSocket Config & Handlers
+├── config/                     # App Configurations
+│   ├── RedisConfig.java       # Redis connection & pub/sub setup
+│   ├── SecurityConfig.java    # JWT & Spring Security config
+│   └── WebSocketConfig.java   # WebSocket STOMP configuration
+│
+├── controller/                 # REST Controllers
+│   ├── AuthController.java    # Login/Signup endpoints
+│   ├── DocumentController.java # Document REST endpoints
+│   └── TestController.java    # Test/protected routes
+│
+├── dto/                        # Request/Response DTOs
+│   ├── auth/                  # Auth DTOs
+│   ├── document/              # Document DTOs
+│   └── websocket/
+│       ├── EditMessage.java   # WebSocket edit message
+│       └── RedisDocMessage.java # Redis pub/sub message
+│
+├── entity/                     # JPA Entities
+│   ├── Document.java          # Document entity
+│   ├── DocumentMember.java    # Document members
+│   └── User.java              # User entity
+│
+├── redis/                      # Redis operations
+│   ├── RedisPublisher.java    # Publish to Redis channels
+│   ├── RedisSubscriber.java   # Subscribe to Redis channels
+│   └── RedisMessageListener.java # Forward Redis msgs to WebSocket
+│
+├── repo/                       # JPA Repositories
+│   ├── DocRepo.java           # Document repository
+│   └── UserRepo.java          # User repository
+│
+├── scheduler/                  # Scheduled Tasks
+│   └── DocSaveScheduler.java  # Periodic Redis→DB persistence
+│
+├── security/                   # Security Components
+│   ├── JwtUtil.java           # JWT token generation/validation
+│   ├── JwtFilter.java         # JWT authentication filter
+│   └── StompPrincipal.java    # WebSocket principal
+│
+├── service/                    # Business Logic
+│   ├── AuthService.java       # Authentication logic
+│   ├── DocumentService.java   # Document operations with Redis caching
+│   ├── RedisDocService.java   # Redis cache operations
+│   ├── DocPersistenceService.java # Database persistence
+│   └── DocCollabService.java  # Collaboration logic (edits, join, leave)
+│
+└── websocket/                  # WebSocket Handlers
+    ├── DocWebSocketController.java # Message handlers
+    ├── DocumentSessionRegistry.java # Track active sessions
+    └── WebSocketAuthInterceptor.java # JWT validation for WebSocket
 ```
 
 ---
@@ -104,34 +148,97 @@ src/main/java/com/example/backend
 
 * Java 17+
 * Maven
-* PostGreSql
+* Docker & Docker Compose
+* PostgreSQL (or use Docker)
+* Redis (or use Docker)
 
-### Steps
+### Quick Start with Docker
 
 ```bash
 # Clone the repo
 git clone https://github.com/JayitaSd/ParallelCode/Backend.git
 cd Backend
 
-# Configure database in application.properties
+# Build the project
+mvn clean install -DskipTests
 
+# Start all services (PostgreSQL + Redis + Spring Boot)
+docker-compose up -d
+
+# Check logs
+docker-compose logs -f app
+```
+
+### Manual Setup (Local Development)
+
+```bash
+# 1. Ensure PostgreSQL is running
+# Configure in application.properties:
 spring.datasource.url=jdbc:postgresql://localhost:5432/Ide
-spring.datasource.username=root
+spring.datasource.username=postgres
 spring.datasource.password=your_password
 
-# Build & Run
-mvn clean install
+# 2. Ensure Redis is running on localhost:6379
+# OR start with Docker:
+docker run -d -p 6379:6379 --name redis_cache redis:7-alpine
+
+# 3. Build & Run
+mvn clean install -DskipTests
 mvn spring-boot:run
+```
+
+### Docker Compose Commands
+
+```bash
+# Start all services
+docker-compose up -d
+
+# Stop all services
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Access PostgreSQL
+docker-compose exec postgres psql -U postgres -d Ide
+
+# Access Redis CLI
+docker-compose exec redis redis-cli
 ```
 
 ---
 
-## ⚡ Environment Variables
+## ⚡ Configuration
+
+### Redis Configuration
+
+```properties
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+```
+
+### Document Persistence
+
+```properties
+app.document.persistence.enabled=true
+app.document.persistence.interval=30000  # 30 seconds
+```
+
+### JWT Configuration
+
+```properties
+jwt.secret=your_jwt_secret_key_here
+jwt.expiration=3600000  # 1 hour in milliseconds
+```
+
+### Environment Variables
 
 | Variable       | Description                |
 | -------------- | -------------------------- |
 | JWT_SECRET     | Secret key for signing JWT |
-| JWT_EXPIRATION | Token expiry time          |
+| JWT_EXPIRATION | Token expiry time (ms)     |
+| SPRING_DATA_REDIS_HOST | Redis server host |
+| SPRING_DATA_REDIS_PORT | Redis server port |
 
 ---
 
@@ -149,3 +256,8 @@ Use tools like **Postman** or **cURL**:
 * Ensure WebSocket is enabled on frontend
 * JWT must be attached in headers for secured REST APIs
 * Handle reconnect logic on client for better UX
+* Redis automatically expires documents after 24 hours
+* Documents are persisted to PostgreSQL in real-time and on user disconnect
+* Multiple instances can scale horizontally using Redis Pub/Sub
+
+---
