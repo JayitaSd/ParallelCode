@@ -1,92 +1,15 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>WebSocket Collaborative Editor</title>
-</head>
-<body>
-
-<h2>Real-Time Document Editor User 1</h2>
-
-<button onclick="connect()">Connect</button>
-<button onclick="subscribe()">Subscribe</button>
-<button onclick="joinDoc()">Join Document</button>
-<button onclick="sendEdit()">Send Edit</button>
-
-<br><br>
-
-<textarea id="editor" rows="15" cols="80"></textarea>
-
-<br><br>
-
-<pre id="log"></pre>
-
-<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
-
-<script>
-  let stompClient = null;
-
-  // 🔥 PASTE YOUR JWT HERE
-  const token = "JWT_HERE";
-
-  function log(message) {
-    document.getElementById("log").innerText += message + "\n";
-  }
-
-  function connect() {
-    const socket = new WebSocket("ws://localhost:8080/ws?token=" + token);
-
-    stompClient = Stomp.over(socket);
-
-    stompClient.connect(
-            {},
-            function (frame) {
-              log("✅ Connected: " + frame);
-            },
-            function (error) {
-              log("❌ Error: " + error);
-            }
-    );
-  }
-
-  function subscribe() {
-
-    // 📢 Broadcast updates (ALL users)
-    stompClient.subscribe("/topic/doc/1", function (message) {
-      document.getElementById("editor").value = message.body;
-      log("📢 Broadcast received → editor updated");
-    });
-
-    // 🔒 Private message (initial document load)
-    stompClient.subscribe("/user/queue/doc/1", function (message) {
-      document.getElementById("editor").value = message.body;
-      log("🔒 Document loaded from server");
-    });
-
-    log("✅ Subscribed to document channels");
-  }
-
-  function joinDoc() {
-    const content = document.getElementById("editor").value;
-    stompClient.send("/app/join", {}, JSON.stringify({
-      docId: 1,
-      content: content
-    }));
-
-    log("➡️ JOIN sent" + content);
-  }
-
-  function sendEdit() {
-    const content = document.getElementById("editor").value;
-
-    stompClient.send("/app/edit", {}, JSON.stringify({
-      docId: 1,
-      content: content
-    }));
-
-    log("➡️ EDIT sent: " + content);
-  }
-</script>
-
-</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="CodeSync - Real-Time Collaborative Code Editor" />
+    <meta name="theme-color" content="#3B82F6" />
+    <title>CodeSync - Real-Time Collaborative Code Editor</title>
+  </head>
+  <body class="bg-white dark:bg-gray-950">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
