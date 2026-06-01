@@ -41,6 +41,7 @@ public class DocumentService {
         User user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         Document document = new Document(docRequest.getTitle(), docRequest.getContent(), user);
+        document.setLanguage(docRequest.getLanguage());
         docRepo.save(document);
 
         redisDocService.saveDocumentToCache(document.getId(), document.getContent());
@@ -49,6 +50,9 @@ public class DocumentService {
                 document.getId(),
                 document.getTitle(),
                 document.getContent(),
+                document.getLanguage(),
+                document.getCreatedAt(),
+                document.getUpdatedAt(),
                 user.getUsername(),
                 List.of()
         );
@@ -65,6 +69,9 @@ public class DocumentService {
                 document.getId(),
                 document.getTitle(),
                 document.getContent(),
+                document.getLanguage(),
+                document.getCreatedAt(),
+                document.getUpdatedAt(),
                 document.getOwner().getUsername(),
                 members
         );
@@ -78,6 +85,33 @@ public class DocumentService {
         DocumentMember member = new DocumentMember(document, user);
         document.getMembers().add(member);
         docRepo.save(document);
+    }
+
+    /**
+     * Get all documents owned by the user
+     */
+    public List<DocResponse> getUserDocuments(String username) {
+        User user = userRepo.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        List<Document> documents = docRepo.findByOwner(user);
+        return documents.stream()
+                .map(document -> {
+                    List<String> members = document.getMembers()
+                            .stream()
+                            .map(m -> m.getUser().getUsername())
+                            .collect(Collectors.toList());
+                    return new DocResponse(
+                            document.getId(),
+                            document.getTitle(),
+                            document.getContent(),
+                            document.getLanguage(),
+                            document.getCreatedAt(),
+                            document.getUpdatedAt(),
+                            document.getOwner().getUsername(),
+                            members
+                    );
+                })
+                .collect(Collectors.toList());
     }
 
     /**
@@ -114,5 +148,15 @@ public class DocumentService {
             redisDocService.saveDocumentToCache(docId, dbContent);
         }
         return dbContent;
+    }
+    public void deleteDocument(Long id, String username) {
+        Document doc = docRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Document not found"));
+
+        if (!doc.getOwner().getUsername().equals(username)) {
+            throw new RuntimeException("You don't have permission to delete this document");
+        }
+
+        docRepo.delete(doc);
     }
 }

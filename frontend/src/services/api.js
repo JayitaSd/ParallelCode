@@ -5,61 +5,56 @@ import { storage } from '@/utils/storage.js';
 console.log('API Base URL:', API_BASE_URL);
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-  withCredentials: true,
+    baseURL: API_BASE_URL,
+    withCredentials: false,
+    timeout: 10000, // Added timeout
 });
 
-// Request interceptor to add JWT token
-api.interceptors.request.use(
-  (config) => {
-    const token = storage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-    console.log('Request to:', config.baseURL + config.url);
-    console.log('Request method:', config.method.toUpperCase());
-    console.log('Request data:', config.data);
-    console.log('Request headers:', config.headers);
+const publicEndpoints = ['/auth/login', '/auth/signup'];
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      console.log('Token added to request');
-    } else {
-      console.log('No token found in storage');
+// Request Interceptor
+api.interceptors.request.use(
+    (config) => {
+        const token = storage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+
+        const isPublicEndpoint = publicEndpoints.some(endpoint =>
+            (config.url || '').startsWith(endpoint)
+        );
+
+        // Ensure headers
+        config.headers['Content-Type'] = 'application/json';
+        config.headers['Accept'] = 'application/json';
+
+        console.log('Request to:', config.baseURL + config.url);
+        console.log('Is public endpoint:', isPublicEndpoint);
+
+        if (!isPublicEndpoint && token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        return config;
+    },
+    (error) => {
+        console.error('Request interceptor error:', error);
+        return Promise.reject(error);
     }
-    return config;
-  },
-  (error) => {
-    console.error('Request error:', error);
-    return Promise.reject(error);
-  }
 );
 
-// Response interceptor to handle errors
+// Response Interceptor
 api.interceptors.response.use(
-  (response) => {
-    console.log('Response received:', response.status, response.data);
-    return response;
-  },
-  (error) => {
-    console.error('Response error:', {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      url: error.config?.url,
-      method: error.config?.method,
-    });
-    if (error.response?.status === 401) {
-      // Token expired or invalid
-      storage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-      storage.removeItem(STORAGE_KEYS.USER_DATA);
-      // Optionally redirect to login
-      window.location.href = '/auth';
+    (response) => {
+        return response;
+    },
+    (error) => {
+        console.error('Response error:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            url: error.config?.url,
+            method: error.config?.method
+        });
+        return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
 );
 
 export default api;
-

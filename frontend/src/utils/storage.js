@@ -1,20 +1,24 @@
 /**
- * Safe localStorage wrapper with error handling
+ * Safe localStorage wrapper with better error handling
  */
 
 export const storage = {
-  // Get item from localStorage
   getItem: (key, defaultValue = null) => {
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : defaultValue;
+
+      // Handle "undefined" string case (common bug)
+      if (!item || item === "undefined") {
+        return defaultValue;
+      }
+
+      return JSON.parse(item);
     } catch (error) {
       console.error(`Error reading from localStorage: ${key}`, error);
       return defaultValue;
     }
   },
 
-  // Set item in localStorage
   setItem: (key, value) => {
     try {
       window.localStorage.setItem(key, JSON.stringify(value));
@@ -25,7 +29,6 @@ export const storage = {
     }
   },
 
-  // Remove item from localStorage
   removeItem: (key) => {
     try {
       window.localStorage.removeItem(key);
@@ -36,7 +39,6 @@ export const storage = {
     }
   },
 
-  // Clear all localStorage
   clear: () => {
     try {
       window.localStorage.clear();
@@ -47,7 +49,6 @@ export const storage = {
     }
   },
 
-  // Check if key exists
   hasItem: (key) => {
     try {
       return window.localStorage.getItem(key) !== null;
@@ -59,4 +60,3 @@ export const storage = {
 };
 
 export default storage;
-

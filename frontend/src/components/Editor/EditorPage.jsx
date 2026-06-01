@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth.js';
 import { CodeEditor } from './CodeEditor.jsx';
 import { UsersList } from './UsersList.jsx';
 import { DocumentHeader } from './DocumentHeader.jsx';
+import { EditorLayout } from '@/components/Layout/EditorLayout.jsx';
 import { EditorSkeleton } from '@/components/Common/Loading.jsx';
 import { showError } from '@/components/Common/Toast.jsx';
 import { documentService } from '@/services/documentService.js';
@@ -227,17 +228,18 @@ export const EditorPage = () => {
   }
 
   return (
-      <div className="h-screen bg-white dark:bg-gray-950 flex flex-col overflow-hidden">
+      <EditorLayout>
+        <div className="h-full bg-white dark:bg-gray-950 flex flex-col overflow-hidden">
 
-        {/* Header */}
-        <DocumentHeader
-            document={documentData}
-            isSaving={isSaving}
-            lastSaved={lastSaved}
-        />
+          {/* Header */}
+          <DocumentHeader
+              document={documentData}
+              isSaving={isSaving}
+              lastSaved={lastSaved}
+          />
 
-        {/* Main */}
-        <div className="flex-1 flex overflow-hidden">
+          {/* Main */}
+          <div className="flex-1 flex overflow-hidden">
 
           {/* Editor */}
           <div className="flex-1 flex flex-col min-w-0">
@@ -296,6 +298,7 @@ export const EditorPage = () => {
           </button>
         </div>
       </div>
+      </EditorLayout>
   );
 };
 

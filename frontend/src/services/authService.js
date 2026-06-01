@@ -9,24 +9,38 @@ export const authService = {
     try {
       console.log('Login request to:', `${api.defaults.baseURL}${API_ENDPOINTS.LOGIN}`);
       console.log('Login credentials:', { username });
-      const response = await api.post(API_ENDPOINTS.LOGIN, {
-        username,
-        password,
+
+      // Backend expects 'usernameOrEmail' field
+      const payload = {
+        usernameOrEmail: username,   // ← Critical fix
+        password: password
+      };
+
+      const response = await api.post(API_ENDPOINTS.LOGIN, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       });
-      console.log('Login response:', response.data);
+
+      console.log('✅ Login response:', response.data);
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      console.error('Login failed:', {
+      console.error('❌ Login failed:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
-        message: error.message,
         data: error.response?.data,
-        config: error.config,
+        message: error.message,
       });
-      const message = error.response?.data?.message || ERROR_MESSAGES.INVALID_CREDENTIALS;
+
+      const message = error.response?.data?.message
+          || error.response?.data?.error
+          || error.response?.data?.details
+          || ERROR_MESSAGES.INVALID_CREDENTIALS;
+
       return {
         success: false,
         error: message,
@@ -40,24 +54,31 @@ export const authService = {
   signup: async (username, email, password) => {
     try {
       console.log('Signup request to:', `${api.defaults.baseURL}${API_ENDPOINTS.SIGNUP}`);
-      const response = await api.post(API_ENDPOINTS.SIGNUP, {
+
+      const payload = {
         username,
         email,
-        password,
+        password
+      };
+
+      const response = await api.post(API_ENDPOINTS.SIGNUP, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       });
-      console.log('Signup response:', response.data);
+
+      console.log('✅ Signup response:', response.data);
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      console.error('Signup failed:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        message: error.message,
-        data: error.response?.data,
-      });
-      const message = error.response?.data?.message || ERROR_MESSAGES.EMAIL_ALREADY_EXISTS;
+      console.error('❌ Signup failed:', error.response?.data);
+
+      const message = error.response?.data?.message
+          || ERROR_MESSAGES.EMAIL_ALREADY_EXISTS;
+
       return {
         success: false,
         error: message,
@@ -65,34 +86,12 @@ export const authService = {
     }
   },
 
-  /**
-   * Verify token validity
-   */
-  verifyToken: async () => {
-    try {
-      const response = await api.get(API_ENDPOINTS.VERIFY_TOKEN);
-      return {
-        success: true,
-        data: response.data,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: ERROR_MESSAGES.SESSION_EXPIRED,
-      };
-    }
-  },
-
-  /**
-   * Logout user
-   */
   logout: async () => {
     try {
       await api.post(API_ENDPOINTS.LOGOUT);
       return { success: true };
     } catch (error) {
-      // Even if logout fails, we should clear local storage
-      return { success: true };
+      return { success: true }; // Always succeed on logout
     }
   },
 };

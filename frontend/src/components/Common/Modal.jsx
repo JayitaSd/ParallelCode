@@ -35,9 +35,12 @@ export const Modal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
+      onClick={handleBackdropClick}
+    >
       <div
-        className="bg-white dark:bg-gray-900 rounded-lg shadow-lg max-w-md w-full mx-4 animate-fade-in"
+        className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full mx-4 animate-scale-in border border-gray-200 dark:border-gray-800"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

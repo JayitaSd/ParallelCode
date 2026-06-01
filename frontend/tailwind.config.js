@@ -37,9 +37,10 @@ export default {
         mono: ['Fira Code', 'Courier New', 'monospace'],
       },
       animation: {
-        'fade-in': 'fadeIn 0.3s ease-in-out',
+        'fade-in': 'fadeIn 0.2s ease-out',
         'slide-in': 'slideIn 0.3s ease-in-out',
         'pulse-soft': 'pulseSoft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'scale-in': 'scaleIn 0.2s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -53,6 +54,10 @@ export default {
         pulseSoft: {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.7' },
+        },
+        scaleIn: {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
         },
       },
       boxShadow: {

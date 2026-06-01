@@ -5,6 +5,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,6 +21,7 @@ import java.util.Collections;
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
+    private static final Logger logger= LoggerFactory.getLogger(JwtFilter.class);
     private final JwtUtil jwtUtil;
 
     public JwtFilter(JwtUtil jwtUtil) {
@@ -32,7 +35,11 @@ public class JwtFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         
         String path = request.getRequestURI();
-        if (path.startsWith("/ws")) {
+        logger.info("JWT Filter - Request Path: {}", path);
+
+        // Skip JWT validation for public endpoints
+        if (path.startsWith("/ws") || path.startsWith("/auth")) {
+            logger.info("✅ Skipping JWT for public path: {}", path);
             filterChain.doFilter(request, response);
             return;
         }
@@ -47,7 +54,7 @@ public class JwtFilter extends OncePerRequestFilter {
             try {
                 username = jwtUtil.extractUsername(token);
             }catch(Exception e) {
-
+                logger.debug("JWT extraction failed: " + e.getMessage());
             }
         }
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -74,7 +81,6 @@ public class JwtFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
-
         filterChain.doFilter(request, response);
     }
 }

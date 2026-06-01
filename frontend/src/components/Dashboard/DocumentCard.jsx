@@ -17,7 +17,7 @@ export const DocumentCard = ({
   };
 
   return (
-    <div className="group bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full">
+    <div className="group bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-xl dark:hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col h-full">
       {/* Card Header with Quick Actions */}
       <div className="bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-800/50 dark:to-transparent px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-start justify-between">
         <div className="flex-1 min-w-0">
