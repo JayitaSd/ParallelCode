@@ -7,7 +7,7 @@ import { Button } from '@/components/Common/Button.jsx';
 import { Input } from '@/components/Common/Input.jsx';
 
 export const LoginForm = ({ onSwitchToSignup }) => {
-  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [formData, setFormData] = useState({ usernameOrEmail: '', password: '' });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
@@ -28,9 +28,8 @@ export const LoginForm = ({ onSwitchToSignup }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate
     const validationErrors = {};
-    if (!formData.username?.trim()) validationErrors.username = 'Username is required';
+    if (!formData.usernameOrEmail?.trim()) validationErrors.usernameOrEmail = 'Username or Email is required';
     if (!formData.password) validationErrors.password = 'Password is required';
 
     if (Object.keys(validationErrors).length > 0) {
@@ -40,15 +39,24 @@ export const LoginForm = ({ onSwitchToSignup }) => {
 
     setIsLoading(true);
     try {
-      const result = await authService.login(formData.username.trim(), formData.password);
+      const result = await authService.login(
+          formData.usernameOrEmail.trim(),
+          formData.password
+      );
 
       if (result.success) {
-        const { token, username } = result.data;
-        login({ name: username, username }, token);
+        const { token, username, userId, email } = result.data;
+        login({
+          name: username,
+          username,
+          userId,
+          email
+        }, token);
+
         showSuccess('Welcome back!');
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });   // Changed to /dashboard
       } else {
-        showError(result.error || 'Login failed. Please try again.');
+        showError(result.error || 'Invalid credentials');
         setErrors({ submit: result.error });
       }
     } catch (error) {
@@ -60,61 +68,57 @@ export const LoginForm = ({ onSwitchToSignup }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 relative z-20">
-      {errors.submit && (
-        <div className="p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg text-sm text-danger-700 dark:text-danger-300">
-          {errors.submit}
-        </div>
-      )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {errors.submit && (
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+              {errors.submit}
+            </div>
+        )}
 
-      <Input
-        label="Username"
-        name="username"
-        type="text"
-        value={formData.username}
-        onChange={handleChange}
-        error={errors.username}
-        placeholder="john_doe"
-        disabled={isLoading}
-        autoComplete="username"
-        required
-      />
+        <Input
+            label="Username or Email"
+            name="usernameOrEmail"
+            type="text"
+            value={formData.usernameOrEmail}
+            onChange={handleChange}
+            error={errors.usernameOrEmail}
+            placeholder="john_doe or john@example.com"
+            disabled={isLoading}
+            required
+        />
 
-      <Input
-        label="Password"
-        name="password"
-        type="password"
-        value={formData.password}
-        onChange={handleChange}
-        error={errors.password}
-        placeholder="••••••••"
-        disabled={isLoading}
-        autoComplete="current-password"
-        required
-      />
+        <Input
+            label="Password"
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            error={errors.password}
+            placeholder="••••••••"
+            disabled={isLoading}
+            required
+        />
 
-      <Button
-        type="submit"
-        variant="primary"
-        className="w-full mt-6"
-        loading={isLoading}
-        disabled={isLoading}
-      >
-        {isLoading ? 'Signing in...' : 'Sign In'}
-      </Button>
-
-      <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
-        Don't have an account?{' '}
-        <button
-          type="button"
-          onClick={onSwitchToSignup}
-          disabled={isLoading}
-          className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        <Button
+            type="submit"
+            variant="primary"
+            className="w-full mt-6"
+            loading={isLoading}
         >
-          Create one
-        </button>
-      </p>
-    </form>
+          {isLoading ? 'Signing in...' : 'Sign In'}
+        </Button>
+
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
+          Don't have an account?{' '}
+          <button
+              type="button"
+              onClick={onSwitchToSignup}
+              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-semibold"
+          >
+            Create one
+          </button>
+        </p>
+      </form>
   );
 };
 

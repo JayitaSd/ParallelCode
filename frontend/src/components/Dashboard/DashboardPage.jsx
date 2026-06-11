@@ -1,21 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MainLayout } from '@/components/Layout/MainLayout.jsx';
-import { DocumentList } from './DocumentList.jsx';
-import { CreateDocModal } from './CreateDocModal.jsx';
+import { useAuth } from '@/hooks/useAuth.js';
+import { useTheme } from '@/context/ThemeContext.jsx';
 import { Button } from '@/components/Common/Button.jsx';
 import { Input } from '@/components/Common/Input.jsx';
-import { DocumentListSkeleton } from '@/components/Common/Loading.jsx';
+import { DocumentList } from './DocumentList.jsx';
+import { CreateDocModal } from './CreateDocModal.jsx';
 import { documentService } from '@/services/documentService.js';
-import {
-  showError,
-  showSuccess,
-} from '@/components/Common/Toast.jsx';
-import { useAuth } from '@/hooks/useAuth.js';
+import { showError, showSuccess } from '@/components/Common/Toast.jsx';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth(); // Added logout from context
+  const { user } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
 
   const [documents, setDocuments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +37,6 @@ export const DashboardPage = () => {
     }
   }, []);
 
-  // Load documents on mount
   useEffect(() => {
     fetchDocuments();
   }, [fetchDocuments]);
@@ -64,7 +60,6 @@ export const DashboardPage = () => {
     }
   };
 
-  // Delete document
   const handleDeleteDocument = async (docId) => {
     const confirmed = window.confirm('Are you sure you want to delete this document?');
     if (!confirmed) return;
@@ -83,7 +78,6 @@ export const DashboardPage = () => {
     }
   };
 
-  // Filter documents
   const filteredDocuments = documents.filter(
       (doc) =>
           doc?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -91,30 +85,87 @@ export const DashboardPage = () => {
   );
 
   return (
-      <MainLayout showSidebar={true}>
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-            {/* Welcome Header */}
-            <div className="mb-12">
-              <div className="text-center lg:text-left">
-                <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent mb-3">
-                  Welcome back, {user?.name || user?.username}! 👋
-                </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl">
-                  Continue coding, collaborating, and creating amazing things with your team.
-                </p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
+        {/* Sidebar */}
+        <div className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 hidden md:block fixed h-screen">
+          <div className="p-6">
+            <div className="flex items-center gap-3 mb-10">
+              <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl">
+                P
               </div>
+              <span className="text-2xl font-bold text-gray-900 dark:text-white">ParallelCode</span>
             </div>
 
-            {/* Page Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-              <div className="flex-1">
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                  My Documents
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400">
+            <nav className="space-y-1">
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium">
+                <span>🏠</span>
+                <span>Dashboard</span>
+              </div>
+              <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-left"
+              >
+                <span>✚</span>
+                <span>New Document</span>
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 md:ml-64">
+          {/* Top Navbar */}
+          <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
+            <div className="flex items-center gap-4 flex-1 max-w-md">
+              <Input
+                  type="search"
+                  placeholder="Search documents by title or language..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+              />
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button
+                  onClick={toggleTheme}
+                  className="p-3 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                {isDark ? '☀️' : '🌙'}
+              </button>
+
+              <div className="flex items-center gap-3 pl-6 border-l border-gray-200 dark:border-gray-700">
+                <div className="text-right hidden sm:block">
+                  <div className="font-medium text-sm text-gray-900 dark:text-white">
+                    {user?.username || user?.name}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {user?.email}
+                  </div>
+                </div>
+                <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-medium cursor-pointer">
+                  {(user?.username || user?.name || 'T')[0].toUpperCase()}
+                </div>
+              </div>
+            </div>
+          </nav>
+
+          {/* Dashboard Content */}
+          <div className="p-6 md:p-10 max-w-7xl mx-auto">
+            <div className="mb-10">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                Welcome back, {user?.username || user?.name}! 👋
+              </h1>
+              <p className="text-lg text-gray-600 dark:text-gray-400">
+                Continue coding, collaborating, and creating amazing things with your team.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-semibold text-gray-900 dark:text-white">My Documents</h2>
+                <p className="text-gray-500 dark:text-gray-400">
                   {documents.length} document{documents.length !== 1 ? 's' : ''}
-                  {searchTerm && ` matching "${searchTerm}"`}
                 </p>
               </div>
 
@@ -122,89 +173,31 @@ export const DashboardPage = () => {
                   variant="primary"
                   size="lg"
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 whitespace-nowrap shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="flex items-center gap-2"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="hidden sm:inline">New Document</span>
-                <span className="sm:hidden">New</span>
+                + New Document
               </Button>
             </div>
 
-            {/* Search Bar */}
-            {documents.length > 0 && (
-                <div className="mb-8">
-                  <Input
-                      type="search"
-                      placeholder="Search documents by title or language..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="max-w-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-primary-500"
-                  />
-                </div>
-            )}
-
-            {/* Empty State */}
-            {!isLoading && documents.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="w-20 h-20 bg-primary-100 dark:bg-primary-900/20 rounded-3xl flex items-center justify-center mb-6">
-                    <svg className="w-10 h-10 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                    </svg>
-                  </div>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">
-                    No documents yet
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-sm leading-relaxed">
-                    Create your first document to start real-time collaboration. It only takes a second!
-                  </p>
-                  <Button
-                      variant="primary"
-                      size="lg"
-                      onClick={() => setShowCreateModal(true)}
-                      className="flex items-center gap-2"
-                  >
-                    Create First Document
-                  </Button>
-                </div>
-            )}
-
-            {/* No Search Results */}
-            {!isLoading && documents.length > 0 && filteredDocuments.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <svg className="w-16 h-16 text-gray-300 dark:text-gray-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No documents found</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6">Try adjusting your search or create a new document</p>
-                  <Button variant="outline" onClick={() => setSearchTerm('')}>
-                    Clear Search
-                  </Button>
-                </div>
-            )}
-
-            {/* Loading State */}
-            {isLoading && <DocumentListSkeleton count={6} />}
-
-            {/* Documents List */}
-            {!isLoading && filteredDocuments.length > 0 && (
+            {/* Documents */}
+            {isLoading ? (
+                <div className="text-center py-20">Loading documents...</div>
+            ) : (
                 <DocumentList
                     documents={filteredDocuments}
-                    isLoading={false}
+                    isLoading={isLoading}
                     onDelete={handleDeleteDocument}
                 />
             )}
           </div>
         </div>
 
-        {/* Create Document Modal */}
         <CreateDocModal
             isOpen={showCreateModal}
             onClose={() => setShowCreateModal(false)}
             onCreate={handleCreateDocument}
         />
-      </MainLayout>
+      </div>
   );
 };
 
