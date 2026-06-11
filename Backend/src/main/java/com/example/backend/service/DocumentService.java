@@ -159,4 +159,23 @@ public class DocumentService {
 
         docRepo.delete(doc);
     }
+    /**
+     * Check if user has permission to edit the document (owner or member)
+     */
+    public boolean hasAccessToDocument(Long docId, String username) {
+        try {
+            Document document = docRepo.findById(docId)
+                    .orElseThrow(() -> new RuntimeException("Document not found"));
+
+            // Owner can always edit
+            if (document.getOwner().getUsername().equals(username)) return true;
+
+            // Check if user is a member
+            return document.getMembers().stream()
+                    .anyMatch(member -> member.getUser().getUsername().equals(username));
+        }catch (Exception e) {
+            logger.error("Error checking access for doc {} by user {}", docId, username, e);
+            return false;
+        }
+    }
 }

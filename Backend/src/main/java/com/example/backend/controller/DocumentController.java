@@ -36,8 +36,14 @@ public class DocumentController {
         return ResponseEntity.ok(docResponse);
     }
     //get document by id
-    @GetMapping("/id/{id}")
-    public ResponseEntity<DocResponse> getDocumentById(@PathVariable Long id) {
+    @GetMapping("/{id}")
+    public ResponseEntity<DocResponse> getDocumentById(@PathVariable Long id, Authentication auth) {
+        String username = auth.getName();
+        System.out.println("Current user: " + username);
+        boolean hasAccess = documentService.hasAccessToDocument(id, username); // reuse for view access too
+        if (!hasAccess) {
+            return ResponseEntity.status(403).build();
+        }
         DocResponse docResponse = documentService.getDocumentById(id);
         return ResponseEntity.ok(docResponse);
     }
@@ -60,5 +66,29 @@ public class DocumentController {
     public ResponseEntity<String> addMembers(@PathVariable Long id, @RequestParam String username) {
         documentService.addMembers(id, username);
         return ResponseEntity.ok("Member added successfully");
+    }
+    // Update document content (REST fallback for auto-save)
+    @PutMapping("/{id}")
+    public ResponseEntity<DocResponse> updateDocument(@PathVariable Long id, @RequestBody(required = false) DocRequest docRequest, Authentication auth) {
+
+        String username = auth.getName();
+        System.out.println("🔍 PUT /documents/" + id + " by user: " + username);
+        if (!documentService.hasAccessToDocument(id, username)) {   // Use hasAccessToDocument
+            return ResponseEntity.status(403).build();
+        }
+        // Handle missing or empty body gracefully
+        String content = (docRequest != null && docRequest.getContent() != null) ? docRequest.getContent() : null;
+
+        if (content == null) {
+            System.out.println("⚠️ No content received in PUT request");
+            // Still try to return current document
+            DocResponse current = documentService.getDocumentById(id);
+            return ResponseEntity.ok(current);
+        }
+
+        documentService.updateDocumentContent(id, content);
+
+        DocResponse updatedDoc = documentService.getDocumentById(id);
+        return ResponseEntity.ok(updatedDoc);
     }
 }

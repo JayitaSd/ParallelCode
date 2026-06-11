@@ -73,19 +73,30 @@ export const documentService = {
   },
 
   /**
-   * Update document
+   * Update document content (Fixed for backend compatibility)
    */
   updateDocument: async (docId, updates) => {
     try {
+      // Ensure we always send a proper object with content
+      const payload = {
+        content: updates?.content || updates || '', // Handle both object and direct string cases
+        ...(updates?.language && { language: updates.language }),
+      };
+
+      console.log(`📤 Updating document ${docId} with payload:`, payload); // Debug log
+
       const response = await api.put(
-        API_ENDPOINTS.UPDATE_DOCUMENT.replace(':id', docId),
-        updates
+          API_ENDPOINTS.UPDATE_DOCUMENT.replace(':id', docId),
+          payload
       );
+
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
+      console.error(`❌ Update document ${docId} failed:`, error.response?.data || error.message);
+
       return {
         success: false,
         error: error.response?.data?.message || ERROR_MESSAGES.NETWORK_ERROR,
@@ -116,7 +127,7 @@ export const documentService = {
   getDocumentMembers: async (docId) => {
     try {
       const response = await api.get(
-        API_ENDPOINTS.GET_DOCUMENT_MEMBERS.replace(':id', docId)
+          API_ENDPOINTS.GET_DOCUMENT_MEMBERS.replace(':id', docId)
       );
       return {
         success: true,
@@ -136,8 +147,8 @@ export const documentService = {
   addDocumentMember: async (docId, email) => {
     try {
       const response = await api.post(
-        API_ENDPOINTS.ADD_DOCUMENT_MEMBER.replace(':id', docId),
-        { email }
+          API_ENDPOINTS.ADD_DOCUMENT_MEMBER.replace(':id', docId),
+          { email }
       );
       return {
         success: true,
@@ -153,4 +164,3 @@ export const documentService = {
 };
 
 export default documentService;
-
