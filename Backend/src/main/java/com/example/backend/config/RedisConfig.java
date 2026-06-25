@@ -11,21 +11,15 @@ import org.springframework.data.redis.serializer.JacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import tools.jackson.databind.ObjectMapper;
 
-/**
- * Configure Redis connection, RedisTemplate, and Pub/Sub listener container
- */
+/**Configure Redis connection, RedisTemplate, and Pub/Sub listener container*/
 @Configuration
 public class RedisConfig {
 
-    /**
-     * Configure RedisTemplate with proper serialization settings
-     */
+    /**Configure RedisTemplate with proper serialization settings*/
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
-
-
 
         JacksonJsonRedisSerializer<Object> jacksonJsonRedisSerializer = new JacksonJsonRedisSerializer<>(Object.class);
 
@@ -41,17 +35,13 @@ public class RedisConfig {
         return template;
     }
 
-    /**
-     * Configure ObjectMapper for JSON serialization
-     */
+    /**Configure ObjectMapper for JSON serialization*/
     @Bean
     public ObjectMapper objectMapper() {
         return new ObjectMapper();
     }
 
-    /**
-     * Configure listener container for Redis Pub/Sub
-     */
+    /**Configure listener container for Redis Pub/Sub */
     @Bean
     public RedisMessageListenerContainer redisMessageListenerContainer(
             RedisConnectionFactory connectionFactory,

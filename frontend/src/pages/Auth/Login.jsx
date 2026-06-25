@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {authService} from "../../services/authService.js";
 import "../../styles/auth.css";
 
 /* ---- Shared logo ---- */
@@ -98,27 +99,28 @@ export default function Login() {
         setApiError("");
     };
 
+    // ✅ Fix — use the result directly:
     const handleSubmit = async () => {
         const e = validate();
         if (Object.keys(e).length) { setErrors(e); return; }
         setLoading(true);
         try {
-            const res = await fetch("http://localhost:8080/api/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ usernameOrEmail: form.usernameOrEmail, password: form.password }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || "Login failed.");
+            const result = await authService.login(form.usernameOrEmail, form.password);
+
+            if (!result.success) throw new Error(result.error || "Login failed.");
+
+            const data = result.data;
+            if (!data.token) throw new Error("No token received. Please try again.");
+
             localStorage.setItem("token", data.token);
+            localStorage.setItem("username", data.username);
             navigate("/dashboard");
         } catch (err) {
-            setApiError(err.message);
+            setApiError(err.message || "Login failed.");
         } finally {
             setLoading(false);
         }
     };
-
     return (
         <div className="auth-page">
             {/* Left: Editor panel */}

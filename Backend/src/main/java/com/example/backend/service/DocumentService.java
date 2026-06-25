@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -93,15 +95,23 @@ public class DocumentService {
         docRepo.save(document);
     }
 
-    /**
-     * Get all documents owned by the user
-     */
+    //Get all documents owned by the user
     public List<DocResponse> getUserDocuments(String username) {
         User user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        List<Document> documents = docRepo.findByOwner(user);
+        List<Document> owned = docRepo.findByOwner(user);
+        List<Document> collaborated = docRepo.findByMemberUsername(username);
+        Set<Long> seen = new HashSet<>();
+        List<Document> allDocuments = new ArrayList<>();
+        for (Document d : owned) {
+            if (seen.add(d.getId())) allDocuments.add(d);
+        }
+        for (Document d : collaborated) {
+            if (seen.add(d.getId())) allDocuments.add(d);
+        }
+
         Set<String> activeUsers = docCollabService.getDocumentUsers(user.getId());
-        return documents.stream()
+        return allDocuments.stream()
                 .map(document -> {
                     List<String> members = document.getMembers()
                             .stream()

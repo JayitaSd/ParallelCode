@@ -131,18 +131,21 @@ export default function Signup() {
         setApiError("");
     };
 
+    // ✅ Fix in SignUp.jsx handleSubmit — replace res.json() with res.text():
     const handleSubmit = async () => {
         const e = validate();
         if (Object.keys(e).length) { setErrors(e); return; }
         setLoading(true);
         try {
-            const res = await fetch("http://localhost:8080/api/auth/signup", {
+            const res = await fetch("http://localhost:8080/auth/signup", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email: form.email, username: form.username, password: form.password }),
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || "Signup failed.");
+
+            const text = await res.text();   // ← text(), not json()
+            if (!res.ok) throw new Error(text || "Signup failed.");
+
             setSuccess(true);
             setTimeout(() => navigate("/login"), 1800);
         } catch (err) {
@@ -151,6 +154,7 @@ export default function Signup() {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="auth-page">

@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { wsService } from "../services/websocketService.js"; // adjust path
 import Editor from "@monaco-editor/react";
 import "../styles/editor.css";
 
-const API_BASE = "http://localhost:8080/api";
+const API_BASE = "http://localhost:8080";
 
 /* Maps our app's language keys to Monaco's language ids */
 const MONACO_LANG = {
@@ -19,6 +20,8 @@ const MONACO_LANG = {
   html: "html",
   css: "css",
 };
+
+
 
 const LANGUAGES = [
   { value: "javascript", label: "JavaScript" },
@@ -66,6 +69,7 @@ export default function EditorPage() {
   const navigate = useNavigate();
   const editorRef = useRef(null);
   const saveTimer = useRef(null);
+  const isRemoteChange = useRef(false);
 
   const [doc, setDoc] = useState(null);
   const [code, setCode] = useState("");
@@ -91,11 +95,33 @@ export default function EditorPage() {
   /* ---- Load document ---- */
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+    if (!token) { navigate("/login"); return; }
+
     fetchDocument();
+
+    // Connect WebSocket and subscribe to this document's topic
+    wsService.connect()
+        .then(() => {
+          const username = localStorage.getItem("username");
+          wsService.joinDocument(docId, username);
+
+          wsService.subscribeToDocument(docId, (message) => {
+            // Ignore messages sent by this user (echo prevention)
+            if (message.username === username) return;
+
+            // Mark as remote so handleCodeChange doesn't re-broadcast
+            isRemoteChange.current = true;
+            setCode(message.content ?? "");
+            if (message.language) setLanguage(message.language);
+            isRemoteChange.current = false;
+          });
+        })
+        .catch((err) => console.error("WebSocket connect failed:", err));
+
+    // Cleanup on unmount / docId change
+    return () => {
+      wsService.disconnect();
+    };
   }, [docId]);
 
   const fetchDocument = async () => {
@@ -108,7 +134,7 @@ export default function EditorPage() {
       setDoc(data);
       setCode(data.content || "");
       setLanguage(data.language || "javascript");
-      setTitleDraft(data.name || "");
+      setTitleDraft(data.title || "");
     } catch (err) {
       setPageError(err.message || "Failed to load document.");
     } finally {
@@ -142,19 +168,25 @@ export default function EditorPage() {
 
   const handleCodeChange = (value) => {
     setCode(value ?? "");
-    queueSave(value ?? "", language, doc?.name);
+    queueSave(value ?? "", language, doc?.title);
+
+    // Only broadcast if this was a local edit, not an incoming remote change
+    if (!isRemoteChange.current) {
+      const username = localStorage.getItem("username");
+      wsService.sendEdit(docId, value ?? "", language, username);
+    }
   };
 
   const handleLanguageChange = (e) => {
     const next = e.target.value;
     setLanguage(next);
-    queueSave(code, next, doc?.name);
+    queueSave(code, next, doc?.title);
   };
 
   const commitTitle = () => {
     setTitleEditing(false);
-    const next = titleDraft.trim() || doc?.name || "Untitled";
-    setDoc((d) => ({ ...d, name: next }));
+    const next = titleDraft.trim() || doc?.title || "Untitled";
+    setDoc((d) => ({ ...d, title: next }));
     queueSave(code, language, next);
   };
 
@@ -188,14 +220,13 @@ export default function EditorPage() {
     setAddingMember(true);
     setMemberError("");
     try {
-      const res = await fetch(`${API_BASE}/documents/${docId}/collaborators`, {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({ username: memberUsername.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Could not add that user.");
-      setDoc((d) => ({ ...d, collaborators: [...(d.collaborators || []), data] }));
+      const res = await fetch(
+          `${API_BASE}/documents/${docId}/members?username=${encodeURIComponent(memberUsername.trim())}`,
+          { method: "POST", headers: authHeaders() }
+      );
+      const text = await res.text();
+      if (!res.ok) throw new Error(text || "Could not add that user.");
+      setDoc((d) => ({ ...d, collaborators: [...(d.collaborators || []), { username: memberUsername.trim() }] }));
       setMemberUsername("");
     } catch (err) {
       setMemberError(err.message || "Could not add that user.");
@@ -257,11 +288,11 @@ export default function EditorPage() {
                 />
             ) : (
                 <button
-                    onClick={() => { setTitleEditing(true); setTitleDraft(doc?.name || ""); }}
+                    onClick={() => { setTitleEditing(true); setTitleDraft(doc?.title || ""); }}
                     className="ed-title-btn"
                     title="Rename document"
                 >
-                  {doc?.name || "Untitled"}
+                  {doc?.title || "Untitled"}
                 </button>
             )}
 
