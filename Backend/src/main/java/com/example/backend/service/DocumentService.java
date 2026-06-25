@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -25,16 +26,19 @@ public class DocumentService {
     private final DocRepo docRepo;
     private final RedisDocService redisDocService;
     private final DocPersistenceService persistenceService;
+    private final DocCollabService docCollabService;
 
     public DocumentService(
             UserRepo userRepo,
             DocRepo docRepo,
             RedisDocService redisDocService,
-            DocPersistenceService persistenceService) {
+            DocPersistenceService persistenceService,
+            DocCollabService docCollabService) {
         this.userRepo = userRepo;
         this.docRepo = docRepo;
         this.redisDocService = redisDocService;
         this.persistenceService = persistenceService;
+        this.docCollabService = docCollabService;
     }
 
     public DocResponse createDocument(DocRequest docRequest, String username) {
@@ -65,6 +69,7 @@ public class DocumentService {
                 .stream()
                 .map(m -> m.getUser().getUsername())
                 .collect(Collectors.toList());
+        Set<String> activeUsers = docCollabService.getDocumentUsers(id);
         return new DocResponse(
                 document.getId(),
                 document.getTitle(),
@@ -73,7 +78,8 @@ public class DocumentService {
                 document.getCreatedAt(),
                 document.getUpdatedAt(),
                 document.getOwner().getUsername(),
-                members
+                members,
+                activeUsers
         );
     }
 
@@ -94,6 +100,7 @@ public class DocumentService {
         User user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         List<Document> documents = docRepo.findByOwner(user);
+        Set<String> activeUsers = docCollabService.getDocumentUsers(user.getId());
         return documents.stream()
                 .map(document -> {
                     List<String> members = document.getMembers()
@@ -108,7 +115,8 @@ public class DocumentService {
                             document.getCreatedAt(),
                             document.getUpdatedAt(),
                             document.getOwner().getUsername(),
-                            members
+                            members,
+                            activeUsers
                     );
                 })
                 .collect(Collectors.toList());

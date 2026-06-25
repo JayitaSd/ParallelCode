@@ -1,7 +1,9 @@
 package com.example.backend.dto.document;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DocResponse {
     private Long id;
@@ -12,10 +14,22 @@ public class DocResponse {
     private LocalDateTime updatedAt;
     private String owner_username;
     private List<String> members;
+    private Set<String> activeUsers = new HashSet<>();
 
     public DocResponse() {
     }
 
+    public DocResponse(Long id, String title, String content, String language, LocalDateTime createdAt, LocalDateTime updatedAt, String owner_username, List<String> members,  Set<String> activeUsers) {
+        this.id = id;
+        this.title = title;
+        this.content = content;
+        this.language = language;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.owner_username = owner_username;
+        this.members = members;
+        this.activeUsers = activeUsers;
+    }
     public DocResponse(Long id, String title, String content, String language, LocalDateTime createdAt, LocalDateTime updatedAt, String owner_username, List<String> members) {
         this.id = id;
         this.title = title;
@@ -26,6 +40,7 @@ public class DocResponse {
         this.owner_username = owner_username;
         this.members = members;
     }
+
 
     // ... existing code...
     public Long getId() {
@@ -90,5 +105,13 @@ public class DocResponse {
 
     public void setMembers(List<String> members) {
         this.members = members;
+    }
+
+    public Set<String> getActiveUsers() {
+        return activeUsers;
+    }
+
+    public void setActiveUsers(Set<String> activeUsers) {
+        this.activeUsers = activeUsers;
     }
 }
