@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/Layout/MainLayout.jsx';
 import { Button } from '@/components/Common/Button.jsx';

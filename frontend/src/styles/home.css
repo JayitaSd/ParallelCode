@@ -1,3 +1,23 @@
+/* ============== HOME PAGE WRAPPER ============== */
+.home-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
+}
+
+.home-main {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Ensure all sections respect the container */
+.home-main > * {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
 /* ============== ABOUT SECTION ============== */
 .about {
     padding: 100px 24px;
