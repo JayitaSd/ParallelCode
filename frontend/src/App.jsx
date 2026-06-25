@@ -1,63 +1,16 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import Login from "./pages/Auth/Login";
+import Signup from "./pages/Auth/Signup";
 
-// Context Providers
-import { AuthProvider } from '@/context/AuthContext.jsx';
-import { ThemeProvider } from '@/context/ThemeContext.jsx';
-import { DocumentProvider } from '@/context/DocumentContext.jsx';
-
-// Components
-import { ProtectedRoute } from '@/components/Layout/ProtectedRoute.jsx';
-import { ErrorBoundary } from '@/components/Common/ErrorBoundary.jsx';
-
-// Pages
-import Home from '@/pages/Home.jsx';
-import Auth from '@/pages/Auth.jsx';
-import Dashboard from '@/pages/Dashboard.jsx';
-import Editor from '@/pages/Editor.jsx';
-import NotFound from '@/pages/NotFound.jsx';
-
-const App = () => {
+export default function App() {
     return (
-        <ErrorBoundary>
-            <Router>
-                <ThemeProvider>
-                    <AuthProvider>
-                        <DocumentProvider>
-                            <Routes>
-                                {/* Public Routes */}
-                                <Route path="/" element={<Home />} />
-                                <Route path="/auth" element={<Auth />} />
-
-                                {/* Protected Routes */}
-                                <Route
-                                    path="/dashboard"
-                                    element={
-                                        <ProtectedRoute>
-                                            <Dashboard />
-                                        </ProtectedRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/editor/:docId"
-                                    element={
-                                        <ProtectedRoute>
-                                            <Editor />
-                                        </ProtectedRoute>
-                                    }
-                                />
-
-                                {/* Fallback */}
-                                <Route path="/404" element={<NotFound />} />
-                                <Route path="*" element={<Navigate to="/" replace />} />
-                            </Routes>
-                        </DocumentProvider>
-                    </AuthProvider>
-                </ThemeProvider>
-            </Router>
-        </ErrorBoundary>
+        <Router>
+            <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+            </Routes>
+        </Router>
     );
-};
-
-export default App;
+}

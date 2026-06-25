@@ -1,5 +1,5 @@
-import { WS_BASE_URL, STORAGE_KEYS } from '@/utils/constants.js';
-import { storage } from '@/utils/storage.js';
+import { WS_BASE_URL, STORAGE_KEYS } from '../utils/constants.js';
+import { storage } from '../utils/storage.js';
 
 class WebSocketService {
   constructor() {
