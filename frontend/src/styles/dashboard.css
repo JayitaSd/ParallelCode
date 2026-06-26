@@ -609,3 +609,14 @@
         padding: 22px;
     }
 }
+.dash-owner-badge {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+    margin-left: 5px;
+    text-transform: uppercase;
+}

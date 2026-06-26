@@ -45,12 +45,9 @@ function initials(name) { return (name || "U").trim()[0]?.toUpperCase() || "U"; 
 
 const Icon = {
   back: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  play: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M4 2.8v10.4a.6.6 0 00.92.5l8.3-5.2a.6.6 0 000-1l-8.3-5.2a.6.6 0 00-.92.5z" fill="currentColor"/></svg>,
   spinner: (p) => <svg {...p} viewBox="0 0 16 16" fill="none" className={`ed-spin ${p.className||""}`}><circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.6" strokeOpacity="0.25"/><path d="M14.2 8a6.2 6.2 0 00-6.2-6.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>,
   check: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   close: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
-  chevron: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  terminal: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><path d="M4 6l2.2 2-2.2 2M7.5 10h4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   users: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5.5" r="2.2" stroke="currentColor" strokeWidth="1.4"/><path d="M1.8 13c0-2.3 1.9-4 4.2-4s4.2 1.7 4.2 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M10.3 4.3c1.1.2 1.9 1.2 1.9 2.4 0 1.1-.7 2-1.7 2.3M12 9.3c1.4.4 2.4 1.6 2.4 3.1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   download: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 12h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
 };
@@ -85,9 +82,6 @@ export default function EditorPage() {
   const [memberUsername, setMemberUsername] = useState("");
   const [memberError,  setMemberError]  = useState("");
   const [addingMember, setAddingMember] = useState(false);
-  const [showOutput,   setShowOutput]   = useState(true);
-  const [running,      setRunning]      = useState(false);
-  const [output,       setOutput]       = useState("");
   const [cursorPos,    setCursorPos]    = useState({ line: 1, col: 1 });
   const [wsConnected,  setWsConnected]  = useState(false);
   const [activeUsers,  setActiveUsers]  = useState([]);
@@ -228,31 +222,6 @@ export default function EditorPage() {
     a.download     = filename;
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  /* ── Run code ── */
-  const handleRun = async () => {
-    setRunning(true);
-    setShowOutput(true);
-    setOutput("");
-    try {
-      const res  = await fetch(`${API_BASE}/documents/${docId}/run`, {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({ content: code, language }),
-      });
-      const text = await res.text();
-      if (!res.ok) {
-        setOutput(`Error: ${text || "Run endpoint not implemented yet on the backend."}`);
-        return;
-      }
-      try {
-        const data = JSON.parse(text);
-        setOutput(data.output ?? data.stdout ?? text ?? "No output.");
-      } catch { setOutput(text || "No output."); }
-    } catch (err) {
-      setOutput(`Error: ${err.message || "Could not reach the run endpoint."}`);
-    } finally { setRunning(false); }
   };
 
   /* ── Add member ── */
@@ -411,12 +380,6 @@ export default function EditorPage() {
               <Icon.download className="ed-icon"/>
               <span>Download</span>
             </button>
-
-            {/* Run button */}
-            <button onClick={handleRun} disabled={running} className="ed-run-btn">
-              {running ? <Icon.spinner className="ed-icon"/> : <Icon.play className="ed-icon"/>}
-              <span>{running ? "Running…" : "Run"}</span>
-            </button>
           </div>
         </header>
 
@@ -451,21 +414,6 @@ export default function EditorPage() {
             />
           </div>
 
-          {/* Console panel */}
-          <div className={`ed-console ${showOutput ? "ed-console-open" : "ed-console-closed"}`}>
-            <button onClick={() => setShowOutput((s) => !s)} className="ed-console-toggle">
-            <span className="ed-console-toggle-left">
-              <Icon.terminal className="ed-icon"/>
-              <span>Console</span>
-            </span>
-              <Icon.chevron className={`ed-icon ed-console-chevron ${showOutput ? "ed-chevron-open" : ""}`}/>
-            </button>
-            {showOutput && (
-                <pre className="ed-console-output">
-              {running ? "Running…" : output || "Run your code to see output here."}
-            </pre>
-            )}
-          </div>
         </div>
 
         {/* ══════════════════ STATUS BAR ══════════════════ */}

@@ -301,21 +301,43 @@ export default function Dashboard() {
                         </button>
                       </div>
 
+                      
                       <div className="dash-collab-section">
                         <div className="dash-collab-label">
                           <UsersIcon />
-                          Collaborators
+                          People
                         </div>
                         <div className="dash-collab-list">
-                          {doc.collaborators && doc.collaborators.length > 0 ? (
-                              doc.collaborators.map((c, i) => (
-                                  <span className="dash-collab-chip" key={c.id || c.username || i}>
-                                                    {initials(c.username || c.name)} {c.username || c.name}
-                                                </span>
-                              ))
-                          ) : (
+
+                          {/* Owner */}
+                          {doc.ownerUsername && (
+                              <span className="dash-collab-chip owner">
+        {initials(doc.ownerUsername)} {doc.ownerUsername}
+                                <span className="dash-owner-badge">owner</span>
+      </span>
+                          )}
+
+                          {/* Members — backend sends as plain strings */}
+                          {doc.members && doc.members.length > 0
+                              ? doc.members.map((m, i) => {
+                                // m is a string username from the backend
+                                const name = typeof m === "string" ? m : (m.username || m.name || "");
+                                return (
+                                    <span className="dash-collab-chip" key={i}>
+              {initials(name)} {name}
+            </span>
+                                );
+                              })
+                              : !doc.ownerUsername && (
+                              <span className="dash-collab-empty">Only you</span>
+                          )
+                          }
+
+                          {/* Fallback if neither owner nor members */}
+                          {!doc.ownerUsername && (!doc.members || doc.members.length === 0) && (
                               <span className="dash-collab-empty">Only you</span>
                           )}
+
                         </div>
                       </div>
 
