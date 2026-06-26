@@ -1,8 +1,12 @@
 package com.example.backend.config;
 
-import com.example.backend.security.JwtFilter;
+import com.example.backend.service.CustomUserDetailsService;
+import com.example.backend.util.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -15,11 +19,11 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    private final JwtFilter jwtFilter;
+    private final JwtAuthFilter jwtAuthFilter;
     private final CorsConfigurationSource corsConfigurationSource;
 
-    public SecurityConfig(JwtFilter jwtFilter, CorsConfigurationSource corsConfigurationSource) {
-        this.jwtFilter = jwtFilter;
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter, CorsConfigurationSource corsConfigurationSource) {
+        this.jwtAuthFilter = jwtAuthFilter;
         this.corsConfigurationSource = corsConfigurationSource;
     }
 
@@ -31,20 +35,32 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Apply CORS first, before any other security filters
+                // CORS must be first — handles preflight OPTIONS before any auth check
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
-                        .requestMatchers("/auth/login", "/auth/signup", "/auth/**").permitAll()
-                        .requestMatchers("/ws/**", "/ws").permitAll()
-                        // All other endpoints require authentication
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+    @Bean
+    public AuthenticationManager authenticationManager(
+            DaoAuthenticationProvider provider) {
+        return new ProviderManager(provider);
+    }
+
+    @Bean
+    public DaoAuthenticationProvider daoAuthenticationProvider(
+            CustomUserDetailsService userDetailsService) {
+        DaoAuthenticationProvider provider =
+                new DaoAuthenticationProvider(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
     }
 }

@@ -5,7 +5,7 @@ import com.example.backend.dto.auth.LoginRequest;
 import com.example.backend.dto.auth.SignUpRequest;
 import com.example.backend.entity.User;
 import com.example.backend.repo.UserRepo;
-import com.example.backend.security.JwtUtil;
+import com.example.backend.util.JwtUtil;
 import jakarta.validation.Valid;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

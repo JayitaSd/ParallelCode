@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class CorsConfig {
@@ -20,19 +21,19 @@ public class CorsConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // Allowed origins for development
-        configuration.setAllowedOriginPatterns(Arrays.asList(
-                "http://localhost:*",
-                "http://127.0.0.1:*"
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://localhost:3000",
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:3000"
         ));
-
-        configuration.setAllowedMethods(Arrays.asList(
+        configuration.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
         ));
 
         // Must be FALSE when using wildcard origins + Authorization header
-        configuration.setAllowCredentials(false);
 
-        configuration.setAllowedHeaders(Arrays.asList(
+        configuration.setAllowedHeaders(List.of(
                 "Content-Type",
                 "Authorization",
                 "Accept",
@@ -40,10 +41,11 @@ public class CorsConfig {
                 "X-Requested-With"
         ));
 
-        configuration.setExposedHeaders(Arrays.asList(
-                "Authorization",
-                "Content-Type"
+        configuration.setExposedHeaders(List.of(
+                "Authorization"
         ));
+
+        configuration.setAllowCredentials(true);
 
         configuration.setMaxAge(3600L);
 

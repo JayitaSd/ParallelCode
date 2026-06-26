@@ -1,15 +1,8 @@
 HELP.md
-CHANGES.md
-ARCHITECTURE.md
-CORS_CONFIGURATION.md
-API_ENDPOINTS.md
-QUICK_API_REFERENCE.md
-JOIN_DOCUMENT_FLOW.md
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-/src/main/resources/application.properties
 
 ### STS ###
 .apt_generated
@@ -38,5 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-
-JOIN_DOCUMENT_FLOW.md

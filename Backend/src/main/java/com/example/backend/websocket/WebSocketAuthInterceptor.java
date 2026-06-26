@@ -1,6 +1,6 @@
 package com.example.backend.websocket;
 
-import com.example.backend.security.JwtUtil;
+import com.example.backend.util.JwtUtil;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
