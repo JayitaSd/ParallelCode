@@ -1,43 +1,38 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { wsService } from "../services/websocketService.js"; // adjust path
-import Editor from "@monaco-editor/react";
+import { useParams, useNavigate } from "react-router-dom";
+import { wsService } from "../services/websocketService.js";
+import MonacoEditor from "@monaco-editor/react";
 import "../styles/editor.css";
 
 const API_BASE = "http://localhost:8080";
 
-/* Maps our app's language keys to Monaco's language ids */
 const MONACO_LANG = {
-  javascript: "javascript",
-  typescript: "typescript",
-  python: "python",
-  java: "java",
-  cpp: "cpp",
-  csharp: "csharp",
-  go: "go",
-  php: "php",
-  ruby: "ruby",
-  html: "html",
-  css: "css",
+  javascript: "javascript", typescript: "typescript", python: "python",
+  java: "java", cpp: "cpp", csharp: "csharp", go: "go",
+  php: "php", ruby: "ruby", html: "html", css: "css",
 };
-
-
 
 const LANGUAGES = [
   { value: "javascript", label: "JavaScript" },
   { value: "typescript", label: "TypeScript" },
-  { value: "python", label: "Python" },
-  { value: "java", label: "Java" },
-  { value: "cpp", label: "C++" },
-  { value: "csharp", label: "C#" },
-  { value: "go", label: "Go" },
-  { value: "php", label: "PHP" },
-  { value: "ruby", label: "Ruby" },
-  { value: "html", label: "HTML" },
-  { value: "css", label: "CSS" },
+  { value: "python",     label: "Python"     },
+  { value: "java",       label: "Java"       },
+  { value: "cpp",        label: "C++"        },
+  { value: "csharp",     label: "C#"         },
+  { value: "go",         label: "Go"         },
+  { value: "php",        label: "PHP"        },
+  { value: "ruby",       label: "Ruby"       },
+  { value: "html",       label: "HTML"       },
+  { value: "css",        label: "CSS"        },
 ];
 
-const AVATAR_COLORS = ["ed-avatar-purple", "ed-avatar-green", "ed-avatar-amber", "ed-avatar-pink", "ed-avatar-sky"];
+const FILE_EXTENSIONS = {
+  javascript: "js", typescript: "ts", python: "py", java: "java",
+  cpp: "cpp", csharp: "cs", go: "go", php: "php",
+  ruby: "rb", html: "html", css: "css",
+};
+
+const AVATAR_COLORS = ["ed-av-purple","ed-av-teal","ed-av-amber","ed-av-pink","ed-av-sky"];
 
 function authHeaders() {
   const token = localStorage.getItem("token");
@@ -46,89 +41,120 @@ function authHeaders() {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
+function initials(name) { return (name || "U").trim()[0]?.toUpperCase() || "U"; }
 
-function initials(name) {
-  return (name || "U").trim()[0]?.toUpperCase() || "U";
-}
-
-/* ---- Icons (inline, no extra deps) ---- */
 const Icon = {
-  back: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>,
-  play: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M4 2.8v10.4a.6.6 0 00.92.5l8.3-5.2a.6.6 0 000-1l-8.3-5.2a.6.6 0 00-.92.5z" fill="currentColor" /></svg>,
-  spinner: (p) => <svg {...p} viewBox="0 0 16 16" fill="none" className={`animate-spin ${p.className || ""}`}><circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.6" strokeOpacity="0.25" /><path d="M14.2 8a6.2 6.2 0 00-6.2-6.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>,
-  check: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>,
-  plus: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>,
-  close: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>,
-  chevron: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>,
-  terminal: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.4" /><path d="M4 6l2.2 2-2.2 2M7.5 10h4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>,
-  users: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5.5" r="2.2" stroke="currentColor" strokeWidth="1.4" /><path d="M1.8 13c0-2.3 1.9-4 4.2-4s4.2 1.7 4.2 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><path d="M10.3 4.3c1.1.2 1.9 1.2 1.9 2.4 0 1.1-.7 2-1.7 2.3M12 9.3c1.4.4 2.4 1.6 2.4 3.1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>,
+  back: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  play: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M4 2.8v10.4a.6.6 0 00.92.5l8.3-5.2a.6.6 0 000-1l-8.3-5.2a.6.6 0 00-.92.5z" fill="currentColor"/></svg>,
+  spinner: (p) => <svg {...p} viewBox="0 0 16 16" fill="none" className={`ed-spin ${p.className||""}`}><circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.6" strokeOpacity="0.25"/><path d="M14.2 8a6.2 6.2 0 00-6.2-6.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>,
+  check: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  close: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  chevron: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  terminal: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><path d="M4 6l2.2 2-2.2 2M7.5 10h4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  users: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5.5" r="2.2" stroke="currentColor" strokeWidth="1.4"/><path d="M1.8 13c0-2.3 1.9-4 4.2-4s4.2 1.7 4.2 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M10.3 4.3c1.1.2 1.9 1.2 1.9 2.4 0 1.1-.7 2-1.7 2.3M12 9.3c1.4.4 2.4 1.6 2.4 3.1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+  download: (p) => <svg {...p} viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 12h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
 };
+
+function LogoMark() {
+  return (
+      <div className="ed-logo-mark">
+        <span className="ed-lm ed-lm-1"/><span className="ed-lm ed-lm-2"/>
+        <span className="ed-lm ed-lm-3"/><span className="ed-lm ed-lm-4"/>
+      </div>
+  );
+}
 
 export default function EditorPage() {
   const { docId } = useParams();
-  const navigate = useNavigate();
-  const editorRef = useRef(null);
+  const navigate  = useNavigate();
+  const editorRef = useRef(null);   // Monaco editor instance
   const saveTimer = useRef(null);
-  const isRemoteChange = useRef(false);
+  // KEY FIX: track whether we are currently applying a remote update
+  // so handleCodeChange won't re-broadcast it back
+  const suppressBroadcast = useRef(false);
 
-  const [doc, setDoc] = useState(null);
-  const [code, setCode] = useState("");
-  const [language, setLanguage] = useState("javascript");
-  const [loading, setLoading] = useState(true);
-  const [pageError, setPageError] = useState("");
-
-  const [saveStatus, setSaveStatus] = useState("saved"); // saved | saving | unsaved | error
+  const [doc,          setDoc]          = useState(null);
+  const [code,         setCode]         = useState("");
+  const [language,     setLanguage]     = useState("javascript");
+  const [loading,      setLoading]      = useState(true);
+  const [pageError,    setPageError]    = useState("");
+  const [saveStatus,   setSaveStatus]   = useState("saved");
   const [titleEditing, setTitleEditing] = useState(false);
-  const [titleDraft, setTitleDraft] = useState("");
-
-  const [showMembers, setShowMembers] = useState(false);
+  const [titleDraft,   setTitleDraft]   = useState("");
+  const [showMembers,  setShowMembers]  = useState(false);
   const [memberUsername, setMemberUsername] = useState("");
-  const [memberError, setMemberError] = useState("");
+  const [memberError,  setMemberError]  = useState("");
   const [addingMember, setAddingMember] = useState(false);
+  const [showOutput,   setShowOutput]   = useState(true);
+  const [running,      setRunning]      = useState(false);
+  const [output,       setOutput]       = useState("");
+  const [cursorPos,    setCursorPos]    = useState({ line: 1, col: 1 });
+  const [wsConnected,  setWsConnected]  = useState(false);
+  const [activeUsers,  setActiveUsers]  = useState([]);
 
-  const [showOutput, setShowOutput] = useState(true);
-  const [running, setRunning] = useState(false);
-  const [output, setOutput] = useState("");
-
-  const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
-
-  /* ---- Load document ---- */
+  /* ── Load document + wire WebSocket ── */
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) { navigate("/login"); return; }
-
     fetchDocument();
 
-    // Connect WebSocket and subscribe to this document's topic
     wsService.connect()
         .then(() => {
+          setWsConnected(true);
           const username = localStorage.getItem("username");
+
+          // Tell the server we joined
           wsService.joinDocument(docId, username);
 
+          // Subscribe to real-time edits on this document's topic
           wsService.subscribeToDocument(docId, (message) => {
-            // Ignore messages sent by this user (echo prevention)
-            if (message.username === username) return;
+            // ── INSTANT UPDATE FIX ──────────────────────────────────────
+            // Instead of setCode() (which goes through React state + re-render
+            // and triggers onChange → re-broadcast loop), we push the value
+            // DIRECTLY into Monaco's model. This is synchronous and does NOT
+            // fire onChange, so there's zero echo.
+            if (message.content !== undefined && editorRef.current) {
+              const model = editorRef.current.getModel();
+              if (model) {
+                suppressBroadcast.current = true;
+                // pushEditOperations preserves undo history and cursor position
+                const fullRange = model.getFullModelRange();
+                model.pushEditOperations(
+                    [],
+                    [{ range: fullRange, text: message.content }],
+                    () => null
+                );
+                suppressBroadcast.current = false;
+              }
+              // Also sync React state so queueSave has the latest value
+              setCode(message.content);
+            }
 
-            // Mark as remote so handleCodeChange doesn't re-broadcast
-            isRemoteChange.current = true;
-            setCode(message.content ?? "");
+            // Sync language if sender changed it
             if (message.language) setLanguage(message.language);
-            isRemoteChange.current = false;
+
+            // Track who is active
+            if (message.username) {
+              setActiveUsers((prev) => {
+                if (prev.includes(message.username)) return prev;
+                return [...prev, message.username];
+              });
+            }
           });
         })
-        .catch((err) => console.error("WebSocket connect failed:", err));
+        .catch((err) => {
+          console.error("WebSocket connect failed:", err);
+          setWsConnected(false);
+        });
 
-    // Cleanup on unmount / docId change
-    return () => {
-      wsService.disconnect();
-    };
+    return () => { wsService.disconnect(); };
   }, [docId]);
 
   const fetchDocument = async () => {
     setLoading(true);
     setPageError("");
     try {
-      const res = await fetch(`${API_BASE}/documents/${docId}`, { headers: authHeaders() });
+      const res  = await fetch(`${API_BASE}/documents/${docId}`, { headers: authHeaders() });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to load document.");
       setDoc(data);
@@ -142,8 +168,8 @@ export default function EditorPage() {
     }
   };
 
-  /* ---- Autosave (debounced) ---- */
-  const queueSave = useCallback((nextCode, nextLanguage, nextName) => {
+  /* ── Autosave (debounced 800 ms) ── */
+  const queueSave = useCallback((nextCode, nextLang, nextTitle) => {
     setSaveStatus("unsaved");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
@@ -152,35 +178,36 @@ export default function EditorPage() {
         const res = await fetch(`${API_BASE}/documents/${docId}`, {
           method: "PUT",
           headers: authHeaders(),
-          body: JSON.stringify({
-            content: nextCode,
-            language: nextLanguage,
-            name: nextName,
-          }),
+          body: JSON.stringify({ content: nextCode, language: nextLang, title: nextTitle }),
         });
         if (!res.ok) throw new Error();
         setSaveStatus("saved");
-      } catch {
-        setSaveStatus("error");
-      }
+      } catch { setSaveStatus("error"); }
     }, 800);
   }, [docId]);
 
+  /* ── Local edit: update state + broadcast + queue save ── */
   const handleCodeChange = (value) => {
-    setCode(value ?? "");
-    queueSave(value ?? "", language, doc?.title);
+    // If suppressBroadcast is true, this onChange was fired by our own
+    // model.pushEditOperations call — skip broadcast to prevent echo loop
+    if (suppressBroadcast.current) return;
 
-    // Only broadcast if this was a local edit, not an incoming remote change
-    if (!isRemoteChange.current) {
-      const username = localStorage.getItem("username");
-      wsService.sendEdit(docId, value ?? "", language, username);
-    }
+    const next = value ?? "";
+    setCode(next);
+    queueSave(next, language, doc?.title);
+
+    // Broadcast to all other clients via WebSocket
+    const username = localStorage.getItem("username");
+    wsService.sendEdit(docId, next, language, username);
   };
 
   const handleLanguageChange = (e) => {
     const next = e.target.value;
     setLanguage(next);
     queueSave(code, next, doc?.title);
+    // Broadcast language change too
+    const username = localStorage.getItem("username");
+    wsService.sendEdit(docId, code, next, username);
   };
 
   const commitTitle = () => {
@@ -190,33 +217,47 @@ export default function EditorPage() {
     queueSave(code, language, next);
   };
 
-  /* ---- Run code ---- */
+  /* ── Download file ── */
+  const handleDownload = () => {
+    const ext      = FILE_EXTENSIONS[language] || "txt";
+    const filename = `${doc?.title || "untitled"}.${ext}`;
+    const blob     = new Blob([code], { type: "text/plain" });
+    const url      = URL.createObjectURL(blob);
+    const a        = document.createElement("a");
+    a.href         = url;
+    a.download     = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  /* ── Run code ── */
   const handleRun = async () => {
     setRunning(true);
     setShowOutput(true);
     setOutput("");
     try {
-      const res = await fetch(`${API_BASE}/documents/${docId}/run`, {
+      const res  = await fetch(`${API_BASE}/documents/${docId}/run`, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({ content: code, language }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Execution failed.");
-      setOutput(data.output ?? data.stdout ?? "No output.");
+      const text = await res.text();
+      if (!res.ok) {
+        setOutput(`Error: ${text || "Run endpoint not implemented yet on the backend."}`);
+        return;
+      }
+      try {
+        const data = JSON.parse(text);
+        setOutput(data.output ?? data.stdout ?? text ?? "No output.");
+      } catch { setOutput(text || "No output."); }
     } catch (err) {
-      setOutput(`Error: ${err.message || "Execution failed."}`);
-    } finally {
-      setRunning(false);
-    }
+      setOutput(`Error: ${err.message || "Could not reach the run endpoint."}`);
+    } finally { setRunning(false); }
   };
 
-  /* ---- Add collaborator ---- */
+  /* ── Add member ── */
   const handleAddMember = async () => {
-    if (!memberUsername.trim()) {
-      setMemberError("Enter a username.");
-      return;
-    }
+    if (!memberUsername.trim()) { setMemberError("Enter a username."); return; }
     setAddingMember(true);
     setMemberError("");
     try {
@@ -226,56 +267,43 @@ export default function EditorPage() {
       );
       const text = await res.text();
       if (!res.ok) throw new Error(text || "Could not add that user.");
-      setDoc((d) => ({ ...d, collaborators: [...(d.collaborators || []), { username: memberUsername.trim() }] }));
+      setDoc((d) => ({ ...d, members: [...(d.members || []), { username: memberUsername.trim() }] }));
       setMemberUsername("");
     } catch (err) {
       setMemberError(err.message || "Could not add that user.");
-    } finally {
-      setAddingMember(false);
-    }
+    } finally { setAddingMember(false); }
   };
 
-  const saveLabel = {
-    saved: "Saved",
-    saving: "Saving…",
-    unsaved: "Unsaved changes",
-    error: "Couldn't save",
-  }[saveStatus];
+  const saveLabel = { saved: "Saved", saving: "Saving…", unsaved: "Unsaved", error: "Save failed" }[saveStatus] ?? "Saved";
+  const members   = doc?.members || [];
+  // Merge stored members + currently active WS users for the avatar strip
+  const allUsers  = [...new Set([...members.map(m => m.username), ...activeUsers])];
 
-  if (loading) {
-    return (
-        <div className="ed-loading-screen">
-          <Icon.spinner className="w-8 h-8 text-indigo-600" />
-        </div>
-    );
-  }
-
-  if (pageError) {
-    return (
-        <div className="ed-error-screen">
-          <p className="ed-error-text">{pageError}</p>
-          <Link to="/dashboard" className="ed-error-link">Back to dashboard</Link>
-        </div>
-    );
-  }
+  /* ── Loading / error ── */
+  if (loading) return (
+      <div className="ed-loading-screen">
+        <Icon.spinner className="ed-loading-spinner"/>
+        <span className="ed-loading-text">Loading document…</span>
+      </div>
+  );
+  if (pageError) return (
+      <div className="ed-error-screen">
+        <p className="ed-error-text">{pageError}</p>
+        <button className="ed-error-link" onClick={() => navigate("/dashboard")}>← Back to dashboard</button>
+      </div>
+  );
 
   return (
       <div className="ed-page">
-        {/* ---------- Top bar ---------- */}
+
+        {/* ══════════════════ TOP BAR ══════════════════ */}
         <header className="ed-topbar">
           <div className="ed-topbar-left">
-            <button onClick={() => navigate("/dashboard")} className="ed-back-btn" aria-label="Back to dashboard">
-              <Icon.back className="w-4 h-4" />
+            <button onClick={() => navigate("/dashboard")} className="ed-icon-btn" aria-label="Back">
+              <Icon.back className="ed-icon"/>
             </button>
-
-            <div className="ed-logo">
-              <svg viewBox="0 0 18 18" className="w-4 h-4" fill="none">
-                <rect x="1" y="1" width="7" height="7" rx="1.5" fill="white" opacity="0.9" />
-                <rect x="10" y="1" width="7" height="7" rx="1.5" fill="white" opacity="0.6" />
-                <rect x="1" y="10" width="7" height="7" rx="1.5" fill="white" opacity="0.6" />
-                <rect x="10" y="10" width="7" height="7" rx="1.5" fill="white" opacity="0.9" />
-              </svg>
-            </div>
+            <LogoMark/>
+            <div className="ed-topbar-divider"/>
 
             {titleEditing ? (
                 <input
@@ -290,75 +318,81 @@ export default function EditorPage() {
                 <button
                     onClick={() => { setTitleEditing(true); setTitleDraft(doc?.title || ""); }}
                     className="ed-title-btn"
-                    title="Rename document"
+                    title="Click to rename"
                 >
                   {doc?.title || "Untitled"}
                 </button>
             )}
 
-            <span className="ed-lang-badge">{language}</span>
+            <span className="ed-lang-pill">{language.toUpperCase()}</span>
           </div>
 
           <div className="ed-topbar-right">
             {/* Save status */}
             <div className="ed-save-status">
-              {saveStatus === "saving" && <Icon.spinner className="w-3.5 h-3.5" />}
-              {saveStatus === "saved" && <Icon.check className="w-3.5 h-3.5 text-emerald-400" />}
-              {saveStatus === "error" && <span className="ed-dot ed-dot-error" />}
-              {saveStatus === "unsaved" && <span className="ed-dot ed-dot-unsaved" />}
-              <span>{saveLabel}</span>
+              {saveStatus === "saving"  && <Icon.spinner className="ed-icon ed-icon-muted"/>}
+              {saveStatus === "saved"   && <Icon.check   className="ed-icon ed-icon-green"/>}
+              {saveStatus === "error"   && <span className="ed-status-dot ed-dot-red"/>}
+              {saveStatus === "unsaved" && <span className="ed-status-dot ed-dot-amber"/>}
+              <span className="ed-save-label">{saveLabel}</span>
             </div>
 
-            {/* Collaborator avatars */}
-            <div className="ed-avatars">
-              {(doc?.collaborators || []).slice(0, 4).map((c, i) => (
-                  <div
-                      key={c.id || c.username || i}
-                      className={`ed-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}
-                      title={c.username || c.name}
-                  >
-                    {initials(c.username || c.name)}
-                  </div>
-              ))}
+            <div className="ed-topbar-divider"/>
+
+            {/* Live indicator */}
+            <div className="ed-live-badge">
+              <span className={`ed-live-dot ${wsConnected ? "ed-live-dot-on" : "ed-live-dot-off"}`}/>
+              <span>{wsConnected ? `${allUsers.length + 1} live` : "Offline"}</span>
             </div>
 
-            <div className="relative">
-              <button onClick={() => setShowMembers((s) => !s)} className="ed-share-btn">
-                <Icon.users className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Share</span>
+            {/* Active user avatars */}
+            {allUsers.length > 0 && (
+                <div className="ed-avatars">
+                  {allUsers.slice(0, 4).map((u, i) => (
+                      <div key={u} className={`ed-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`} title={u}>
+                        {initials(u)}
+                      </div>
+                  ))}
+                  {allUsers.length > 4 && <div className="ed-avatar ed-av-gray">+{allUsers.length - 4}</div>}
+                </div>
+            )}
+
+            {/* Share popover */}
+            <div className="ed-popover-wrap">
+              <button onClick={() => setShowMembers((s) => !s)} className="ed-ghost-btn">
+                <Icon.users className="ed-icon"/>
+                <span>Share</span>
               </button>
-
               {showMembers && (
-                  <div className="ed-share-popover">
-                    <div className="ed-share-popover-header">
-                      <p className="ed-share-popover-title">Add collaborator</p>
-                      <button onClick={() => setShowMembers(false)} className="ed-share-popover-close">
-                        <Icon.close className="w-3.5 h-3.5" />
+                  <div className="ed-popover">
+                    <div className="ed-popover-header">
+                      <span className="ed-popover-title">Add collaborator</span>
+                      <button onClick={() => setShowMembers(false)} className="ed-icon-btn" aria-label="Close">
+                        <Icon.close className="ed-icon"/>
                       </button>
                     </div>
-                    <div className="ed-share-input-row">
+                    <div className="ed-popover-input-row">
                       <input
                           value={memberUsername}
                           onChange={(e) => { setMemberUsername(e.target.value); setMemberError(""); }}
                           onKeyDown={(e) => e.key === "Enter" && handleAddMember()}
                           placeholder="Username"
-                          className="ed-share-input"
+                          className="ed-popover-input"
                           autoFocus
                       />
-                      <button onClick={handleAddMember} disabled={addingMember} className="ed-share-add-btn">
-                        {addingMember ? <Icon.spinner className="w-3.5 h-3.5" /> : "Add"}
+                      <button onClick={handleAddMember} disabled={addingMember} className="ed-popover-add-btn">
+                        {addingMember ? <Icon.spinner className="ed-icon"/> : "Add"}
                       </button>
                     </div>
-                    {memberError && <p className="ed-share-error">{memberError}</p>}
-
-                    {doc?.collaborators?.length > 0 && (
-                        <div className="ed-share-list">
-                          {doc.collaborators.map((c, i) => (
-                              <div key={c.id || i} className="ed-share-list-row">
+                    {memberError && <p className="ed-popover-error">{memberError}</p>}
+                    {members.length > 0 && (
+                        <div className="ed-popover-list">
+                          {members.map((c, i) => (
+                              <div key={c.id || i} className="ed-popover-list-row">
                                 <div className={`ed-avatar-sm ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
                                   {initials(c.username || c.name)}
                                 </div>
-                                {c.username || c.name}
+                                <span>{c.username || c.name}</span>
                               </div>
                           ))}
                         </div>
@@ -367,82 +401,88 @@ export default function EditorPage() {
               )}
             </div>
 
+            {/* Language selector */}
+            <select value={language} onChange={handleLanguageChange} className="ed-lang-select" aria-label="Language">
+              {LANGUAGES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+            </select>
+
+            {/* Download button */}
+            <button onClick={handleDownload} className="ed-ghost-btn" title="Download file">
+              <Icon.download className="ed-icon"/>
+              <span>Download</span>
+            </button>
+
+            {/* Run button */}
             <button onClick={handleRun} disabled={running} className="ed-run-btn">
-              {running ? <Icon.spinner className="w-3.5 h-3.5" /> : <Icon.play className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{running ? "Running…" : "Run"}</span>
+              {running ? <Icon.spinner className="ed-icon"/> : <Icon.play className="ed-icon"/>}
+              <span>{running ? "Running…" : "Run"}</span>
             </button>
           </div>
         </header>
 
-        {/* ---------- Secondary bar: language select (mobile) ---------- */}
-        <div className="ed-mobile-langbar">
-          <select value={language} onChange={handleLanguageChange} className="ed-select">
-            {LANGUAGES.map((l) => (
-                <option key={l.value} value={l.value}>{l.label}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* ---------- Body: editor + output ---------- */}
+        {/* ══════════════════ EDITOR BODY ══════════════════ */}
         <div className="ed-body">
-          <div className="ed-body-row">
-            {/* Language select (desktop, sits as a thin left rail) */}
-            <div className="ed-rail">
-              <div className="ed-rail-label" style={{ writingMode: "vertical-rl" }}>LANG</div>
-            </div>
-
-            <div className="ed-editor-wrap">
-              <Editor
-                  height="100%"
-                  language={MONACO_LANG[language] || "plaintext"}
-                  value={code}
-                  theme="vs-dark"
-                  onChange={handleCodeChange}
-                  onMount={(editor) => {
-                    editorRef.current = editor;
-                    editor.onDidChangeCursorPosition((e) => {
-                      setCursorPos({ line: e.position.lineNumber, col: e.position.column });
-                    });
-                  }}
-                  options={{
-                    fontSize: 14,
-                    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                    minimap: { enabled: true },
-                    smoothScrolling: true,
-                    scrollBeyondLastLine: false,
-                    automaticLayout: true,
-                    padding: { top: 16 },
-                  }}
-              />
-            </div>
+          <div className="ed-monaco-wrap">
+            <MonacoEditor
+                height="100%"
+                language={MONACO_LANG[language] || "plaintext"}
+                value={code}
+                theme="vs-dark"
+                onChange={handleCodeChange}
+                onMount={(editor) => {
+                  editorRef.current = editor;
+                  editor.onDidChangeCursorPosition((e) => {
+                    setCursorPos({ line: e.position.lineNumber, col: e.position.column });
+                  });
+                }}
+                options={{
+                  fontSize: 14,
+                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                  minimap: { enabled: true },
+                  smoothScrolling: true,
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  padding: { top: 16 },
+                  renderLineHighlight: "all",
+                  cursorBlinking: "smooth",
+                  cursorSmoothCaretAnimation: "on",
+                  bracketPairColorization: { enabled: true },
+                }}
+            />
           </div>
 
-          {/* ---------- Output / console panel ---------- */}
+          {/* Console panel */}
           <div className={`ed-console ${showOutput ? "ed-console-open" : "ed-console-closed"}`}>
             <button onClick={() => setShowOutput((s) => !s)} className="ed-console-toggle">
-                        <span className="ed-console-toggle-left">
-                            <Icon.terminal className="w-3.5 h-3.5" />
-                            Console
-                        </span>
-              <Icon.chevron className={`ed-console-chevron ${showOutput ? "ed-console-chevron-open" : ""}`} />
+            <span className="ed-console-toggle-left">
+              <Icon.terminal className="ed-icon"/>
+              <span>Console</span>
+            </span>
+              <Icon.chevron className={`ed-icon ed-console-chevron ${showOutput ? "ed-chevron-open" : ""}`}/>
             </button>
             {showOutput && (
                 <pre className="ed-console-output">
-                            {running ? "Running…" : output || "Run your code to see output here."}
-                        </pre>
+              {running ? "Running…" : output || "Run your code to see output here."}
+            </pre>
             )}
           </div>
         </div>
 
-        {/* ---------- Bottom status bar ---------- */}
+        {/* ══════════════════ STATUS BAR ══════════════════ */}
         <footer className="ed-statusbar">
-          <span>Ln {cursorPos.line}, Col {cursorPos.col}</span>
+          <div className="ed-statusbar-left">
+            <span>Ln {cursorPos.line}, Col {cursorPos.col}</span>
+            <span className="ed-statusbar-sep"/>
+            <span>Spaces: 2</span>
+            <span className="ed-statusbar-sep"/>
+            <span>UTF-8</span>
+          </div>
           <div className="ed-statusbar-right">
-                    <span className="ed-live-dot">
-                        <span className="ed-live-dot-indicator" />
-                        Live
-                    </span>
-            <span className="uppercase font-mono">{language}</span>
+            <span className="ed-statusbar-lang">{language.toUpperCase()}</span>
+            <span className="ed-statusbar-sep"/>
+            <span className={wsConnected ? "ed-status-green" : "ed-status-muted"}>
+            {wsConnected ? "⬡ Live" : "⬡ Disconnected"}
+          </span>
           </div>
         </footer>
       </div>
